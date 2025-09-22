@@ -14,6 +14,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Debug secret
+        run: |
+          echo "CLIENT_REPO_TOKEN length: ${#CLIENT_REPO_TOKEN}"
+        env:
+          CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
+
       - name: Push to client fork
         run: |
           git remote add client https://x-access-token:${{ secrets.CLIENT_REPO_TOKEN }}@github.com/OctusLab/POC-upstream.git
