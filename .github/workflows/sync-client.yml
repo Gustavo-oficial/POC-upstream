@@ -1,40 +1,45 @@
-name: Sync to Client Fork
+name: Sincronizar repositórios
 
-on:
-  push:
-    branches:
+on: 
+  push: 
+    branches: 
       - main
+  # Você pode adicionar mais gatilhos, como eventos agendados
+  # schedule: 
+  #   - cron: '0 0 * * *'
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
-      # 1️⃣ Checkout do seu repositório
-      - name: Checkout source
-        uses: actions/checkout@v4
+      # 1️⃣ Checkout do repositório de origem
+      - name: Fazer checkout do repositório de origem
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      # 2️⃣ Configurar usuário Git
-      - name: Configure Git
+      # 2️⃣ Enviar para o repositório do cliente
+      - name: Enviar para o repositório do cliente
+        env:
+          CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }} # Token do cliente
+          ORIGINAL_REPO_NAME: ${{ github.event.repository.name }}
+          ORG_NAME: OctusLab
         run: |
-          git config --global user.name "GitHub Actions"
+          # Configurar usuário Git
           git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
 
-      # 3️⃣ Debug do secret (opcional)
-      - name: Debug secret
-        run: |
-          echo "CLIENT_REPO_TOKEN length: ${#CLIENT_REPO_TOKEN}"
-        env:
-          CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
+          # Clonar o repositório do cliente usando HTTPS com token
+          git clone https://x-access-token:$CLIENT_REPO_TOKEN@github.com/OctusLab/POC-upstream.git
+          cd POC-upstream
 
-      # 4️⃣ Push para o repositório do cliente
-      - name: Push to client fork
-        env:
-            CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
-        run: |
-            git config --global user.name "GitHub Actions"
-            git config --global user.email "actions@github.com"
+          # Adicionar remote do repositório original e atualizar
+          git remote add $ORIGINAL_REPO_NAME https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git
+          git remote update
 
-            # Push direto usando token na URL
-            git push https://x-access-token:$CLIENT_REPO_TOKEN@github.com/OctusLab/POC-upstream.git main
+          # Mesclar a branch main do repositório original
+          git merge $ORIGINAL_REPO_NAME/main
+
+          # Enviar alterações para o repositório do cliente
+          git push origin main
