@@ -9,18 +9,32 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # 1️⃣ Checkout do seu repositório
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2️⃣ Configurar usuário Git
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      # 3️⃣ Debug do secret (opcional)
       - name: Debug secret
         run: |
           echo "CLIENT_REPO_TOKEN length: ${#CLIENT_REPO_TOKEN}"
         env:
           CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
 
+      # 4️⃣ Push para o repositório do cliente
       - name: Push to client fork
+        env:
+          CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
         run: |
-          git remote add client https://x-access-token:${{ secrets.CLIENT_REPO_TOKEN }}@github.com/OctusLab/POC-upstream.git
-          git push --force client main
+          # Adiciona remote (sem token aqui)
+          git remote add client https://github.com/OctusLab/POC-upstream.git
+
+          # Push usando token direto na URL
+          git push https://x-access-token:$CLIENT_REPO_TOKEN@github.com/OctusLab/POC-upstream.git main
