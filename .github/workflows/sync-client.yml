@@ -34,9 +34,11 @@ jobs:
           git clone https://x-access-token:$CLIENT_REPO_TOKEN@github.com/OctusLab/POC-upstream.git
           cd POC-upstream
 
-          # Adicionar remote do repositório original e atualizar
+          # Adicionar remote do repositório original
           git remote add $ORIGINAL_REPO_NAME https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git
-          git remote update
+
+          # Buscar os commits da branch main do repositório original
+          git fetch $ORIGINAL_REPO_NAME main
 
           # Mesclar a branch main do repositório original
           git merge $ORIGINAL_REPO_NAME/main
