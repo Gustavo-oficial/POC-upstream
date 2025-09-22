@@ -20,29 +20,13 @@ jobs:
           fetch-depth: 0
 
       # ================================
-      # Opção 1: Push direto para o cliente
-      # ================================
-      - name: Push direto para o cliente (opção simples)
-        env:
-          CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-          # Adicionar remote do cliente
-          git remote add client https://x-access-token:$CLIENT_REPO_TOKEN@github.com/OctusLab/POC-upstream.git
-
-          # Push direto da branch main
-          git push client main --force
-
-      # ================================
       # Opção 2: Clone do cliente + merge manual
       # ================================
       - name: Clone cliente e merge manual (opção alternativa)
         env:
           CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
-          ORIGINAL_REPO_NAME: ${{ github.event.repository.name }}
-          ORG_NAME: SeuOrgOuUsuario  # Substitua pelo seu org/usuário
+          ORIGINAL_REPO_NAME: POC-upstream
+          ORG_NAME: Gustavo-oficial
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
