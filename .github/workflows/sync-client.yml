@@ -1,11 +1,11 @@
 name: Sincronizar repositórios
 
-on: 
-  push: 
-    branches: 
+on:
+  push:
+    branches:
       - main
-  # Você pode adicionar mais gatilhos, como eventos agendados
-  # schedule: 
+  # Você pode adicionar mais gatilhos, como agendados
+  # schedule:
   #   - cron: '0 0 * * *'
 
 jobs:
@@ -13,35 +13,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout do repositório de origem
-      - name: Fazer checkout do repositório de origem
-        uses: actions/checkout@v2
+      # 1️⃣ Checkout do repositório de origem (workflow)
+      - name: Checkout do repositório de origem
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2️⃣ Enviar para o repositório do cliente
-      - name: Enviar para o repositório do cliente
+      # ================================
+      # Opção 1: Push direto para o cliente
+      # ================================
+      - name: Push direto para o cliente (opção simples)
         env:
-          CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }} # Token do cliente
-          ORIGINAL_REPO_NAME: ${{ github.event.repository.name }}
-          ORG_NAME: OctusLab
+          CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
         run: |
-          # Configurar usuário Git
-          git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
 
-          # Clonar o repositório do cliente usando HTTPS com token
+          # Adicionar remote do cliente
+          git remote add client https://x-access-token:$CLIENT_REPO_TOKEN@github.com/OctusLab/POC-upstream.git
+
+          # Push direto da branch main
+          git push client main --force
+
+      # ================================
+      # Opção 2: Clone do cliente + merge manual
+      # ================================
+      - name: Clone cliente e merge manual (opção alternativa)
+        env:
+          CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
+          ORIGINAL_REPO_NAME: ${{ github.event.repository.name }}
+          ORG_NAME: SeuOrgOuUsuario  # Substitua pelo seu org/usuário
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          # Clonar o repositório do cliente
           git clone https://x-access-token:$CLIENT_REPO_TOKEN@github.com/OctusLab/POC-upstream.git
           cd POC-upstream
 
           # Adicionar remote do repositório original
-          git remote add $ORIGINAL_REPO_NAME https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git
+          git remote add origin_repo https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git
 
-          # Buscar os commits da branch main do repositório original
-          git fetch $ORIGINAL_REPO_NAME main
+          # Buscar commits da branch main do repositório original
+          git fetch origin_repo main
 
-          # Mesclar a branch main do repositório original
-          git merge $ORIGINAL_REPO_NAME/main
+          # Mesclar alterações
+          git merge origin_repo/main
 
-          # Enviar alterações para o repositório do cliente
+          # Push para o cliente
           git push origin main --force
