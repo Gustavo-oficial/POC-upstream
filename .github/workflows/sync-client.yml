@@ -42,4 +42,4 @@ jobs:
           git merge $ORIGINAL_REPO_NAME/main
 
           # Enviar alterações para o repositório do cliente
-          git push origin main
+          git push origin main --force
