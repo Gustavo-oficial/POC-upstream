@@ -17,17 +17,22 @@ jobs:
       - name: Criando repositório no cliente se não existir
         env:
           GH_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
-          ORG_NAME:  ${{ secrets.CLIENT_ORG_NAME }}         
+          TARGET_ORG: ${{ secrets.CLIENT_ORG_NAME }}         
           TARGET_REPO: ${{ secrets.REPO_NAME }}   
         run: |
-          echo "Verificando se ${ORG_NAME}/${TARGET_REPO} existe..."
-          if gh repo view "${ORG_NAME}/${TARGET_REPO}" >/dev/null 2>&1; then
-            echo "✅ Repositório já existe."
+          # Remover espaços acidentais
+          TARGET_ORG=$(echo "${TARGET_ORG}" | xargs)
+          TARGET_REPO=$(echo "${TARGET_REPO}" | xargs)
+
+          echo "Verificando se ${TARGET_ORG}/${TARGET_REPO} existe..."
+          if gh repo view "${TARGET_ORG}/${TARGET_REPO}" >/dev/null 2>&1; then
+            echo "✅ Repositório já existe. Pulando criação."
           else
-            echo "⚡ Criando repositório ${ORG_NAME}/${TARGET_REPO}..."
-            yes "" | gh repo create "${ORG_NAME}/${TARGET_REPO}" \
+            echo "⚡ Repositório não existe. Criando ${TARGET_ORG}/${TARGET_REPO}..."
+            yes "" | gh repo create "${TARGET_ORG}/${TARGET_REPO}" \
               --private \
               --description "Repositório sincronizado automaticamente"
+            echo "✅ Repositório criado com sucesso."
           fi
 
       - name: Sincronizando repositórios
@@ -56,6 +61,13 @@ jobs:
           GIT_URL="https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${TARGET_ORG}/${ORIGINAL_REPO_NAME}.git"
           echo "Clonando $GIT_URL em $CLONE_DIR/$REPO_FOLDER ..."
           git clone "$GIT_URL" "$REPO_FOLDER"
+
+          # Remover apenas a pasta .github/workflows do cliente
+          if [ -d ".github/workflows" ]; then
+            echo "Removendo .github/workflows do cliente..."
+            git rm -r .github/workflows
+            git commit -m "Removendo workflows do cliente" || true
+          fi
 
           cd "$REPO_FOLDER"
           git remote add origin_repo "https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git"
