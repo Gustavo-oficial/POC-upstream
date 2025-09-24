@@ -57,22 +57,26 @@ jobs:
 
           REPO_FOLDER="${ORIGINAL_REPO_NAME}"
 
-          # URL segura
+          # Clonar repositório do cliente
           GIT_URL="https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${TARGET_ORG}/${ORIGINAL_REPO_NAME}.git"
-          echo "Clonando $GIT_URL em $CLONE_DIR/$REPO_FOLDER ..."
           git clone "$GIT_URL" "$REPO_FOLDER"
+          cd "$REPO_FOLDER"
 
           # Remover apenas a pasta .github/workflows do cliente
           if [ -d ".github/workflows" ]; then
             echo "Removendo .github/workflows do cliente..."
             git rm -r .github/workflows
             git commit -m "Removendo workflows do cliente" || true
+          else
+            echo "Pasta .github/workflows não existe no cliente, nada a remover."
           fi
 
-          cd "$REPO_FOLDER"
+          # Adicionar remote do repositório original
           git remote add origin_repo "https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git"
-
           git fetch origin_repo main
-          git merge origin_repo/main --allow-unrelated-histories -m "Merge automático"
-          git push origin main
 
+          # Mesclar arquivos do repositório original
+          git merge origin_repo/main --allow-unrelated-histories -m "Merge automático"
+
+          # Enviar para o cliente
+          git push origin main --force
