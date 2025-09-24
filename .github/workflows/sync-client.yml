@@ -40,10 +40,11 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          mkdir -p repo
-          cd repo
+          # Criar pasta dentro do workspace
+          mkdir -p "$GITHUB_WORKSPACE/repo"
+          cd "$GITHUB_WORKSPACE/repo"
 
-          # Clonar repositório do cliente (agora garantido que existe)
+          # Clonar repositório do cliente
           git clone https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${TARGET_ORG}/${ORIGINAL_REPO_NAME}.git
           cd ${ORIGINAL_REPO_NAME}
 
