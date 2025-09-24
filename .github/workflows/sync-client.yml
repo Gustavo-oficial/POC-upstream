@@ -25,10 +25,9 @@ jobs:
             echo "✅ Repositório já existe."
           else
             echo "⚡ Criando repositório ${ORG_NAME}/${TARGET_REPO}..."
-            gh repo create "${ORG_NAME}/${TARGET_REPO}" \
+            yes "" | gh repo create "${ORG_NAME}/${TARGET_REPO}" \
               --private \
-              --description "Repositório sincronizado automaticamente" \
-              --yes   # ✅ substitui --confirm
+              --description "Repositório sincronizado automaticamente"
           fi
 
       - name: Sincronizando repositórios
