@@ -37,20 +37,29 @@ jobs:
           ORG_NAME:  ${{ secrets.MY_ORG_NAME }}
           TARGET_ORG: ${{ secrets.CLIENT_ORG_NAME }}           
         run: |
+          # Configurar usuário git
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Criar pasta dentro do workspace
-          mkdir -p "$GITHUB_WORKSPACE/repo"
-          cd "$GITHUB_WORKSPACE/repo"
+          # Diretório seguro dentro do workspace
+          CLONE_DIR="$GITHUB_WORKSPACE/repo"
+          mkdir -p "$CLONE_DIR"
+          cd "$CLONE_DIR"
 
-          # Clonar repositório do cliente
-          git clone https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${TARGET_ORG}/${ORIGINAL_REPO_NAME}.git
-          cd ${ORIGINAL_REPO_NAME}
+          # Garantir que o nome da pasta do clone é apenas o nome do repositório
+          REPO_FOLDER="${ORIGINAL_REPO_NAME}"
+          
+          echo "Clonando repositório do cliente em $CLONE_DIR/$REPO_FOLDER ..."
+          git clone "https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${TARGET_ORG}/${ORIGINAL_REPO_NAME}.git" "$REPO_FOLDER"
+          
+          cd "$REPO_FOLDER"
 
           # Adicionar remote do repositório original
-          git remote add origin_repo https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git
+          git remote add origin_repo "https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git"
 
+          # Buscar e mesclar alterações da origem
           git fetch origin_repo main
           git merge origin_repo/main --allow-unrelated-histories -m "Merge automático"
+
+          # Enviar para o cliente
           git push origin main
