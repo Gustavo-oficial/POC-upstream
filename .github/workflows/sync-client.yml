@@ -4,45 +4,51 @@ on:
   push:
     branches:
       - main
-  # Você pode adicionar mais gatilhos, como agendados
-  # schedule:
-  #   - cron: '0 0 * * *'
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-
     steps:
-      # 1️⃣ Checkout do repositório de origem (workflow)
       - name: Checkout do repositório de origem
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # ================================
-      # Opção 2: Clone do cliente + merge manual
-      # ================================
-      - name: Clone cliente e merge manual (opção alternativa)
+      - name: Criando repositório no cliente se não existir
+        env:
+          GH_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
+          ORG_NAME:  ${{ secrets.CLIENT_ORG_NAME }}         
+          TARGET_REPO: ${{ secrets.REPO_NAME }}   
+        run: |
+          echo "Verificando se ${ORG_NAME}/${TARGET_REPO} existe..."
+          if gh repo view "${ORG_NAME}/${TARGET_REPO}" >/dev/null 2>&1; then
+            echo "✅ Repositório já existe."
+          else
+            echo "⚡ Criando repositório ${ORG_NAME}/${TARGET_REPO}..."
+            gh repo create "${ORG_NAME}/${TARGET_REPO}" \
+              --private \
+              --description "Repositório sincronizado automaticamente" \
+              --confirm
+          fi
+
+      - name: Sincronizando repositórios
         env:
           CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
-          ORIGINAL_REPO_NAME: POC-upstream
-          ORG_NAME: Gustavo-oficial
+          ORIGINAL_REPO_NAME: ${{ secrets.REPO_NAME }} 
+          ORG_NAME:  ${{ secrets.MY_ORG_NAME }}
+          TARGET_ORG: ${{ secrets.CLIENT_ORG_NAME }}           
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Clonar o repositório do cliente
-          git clone https://x-access-token:$CLIENT_REPO_TOKEN@github.com/OctusLab/POC-upstream.git
-          cd POC-upstream
+          # Clonar repositório do cliente (agora garantido que existe)
+          git clone https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${TARGET_ORG}/${ORIGINAL_REPO_NAME}.git
+          cd ${ORIGINAL_REPO_NAME}
 
           # Adicionar remote do repositório original
           git remote add origin_repo https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git
 
-          # Buscar commits da branch main do repositório original
           git fetch origin_repo main
+          git merge origin_repo/main --allow-unrelated-histories -m "Merge automático"
 
-          # Mesclar alterações
-          git merge origin_repo/main
-
-          # Push para o cliente
-          git push origin main --force
+          git push origin main
