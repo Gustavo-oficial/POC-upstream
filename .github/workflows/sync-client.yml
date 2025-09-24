@@ -17,10 +17,9 @@ jobs:
       - name: Criando repositório no cliente se não existir
         env:
           GH_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
-          TARGET_ORG: ${{ secrets.CLIENT_ORG_NAME }}         
-          TARGET_REPO: ${{ secrets.REPO_NAME }}   
+          TARGET_ORG: ${{ secrets.CLIENT_ORG_NAME }}
+          TARGET_REPO: ${{ secrets.REPO_NAME }}
         run: |
-          # Remover espaços acidentais
           TARGET_ORG=$(echo "${TARGET_ORG}" | xargs)
           TARGET_REPO=$(echo "${TARGET_REPO}" | xargs)
 
@@ -29,7 +28,7 @@ jobs:
             echo "✅ Repositório já existe. Pulando criação."
           else
             echo "⚡ Repositório não existe. Criando ${TARGET_ORG}/${TARGET_REPO}..."
-            yes "" | gh repo create "${TARGET_ORG}/${TARGET_REPO}" \
+            gh repo create "${TARGET_ORG}/${TARGET_REPO}" \
               --private \
               --description "Repositório sincronizado automaticamente"
             echo "✅ Repositório criado com sucesso."
@@ -38,14 +37,13 @@ jobs:
       - name: Sincronizando repositórios
         env:
           CLIENT_REPO_TOKEN: ${{ secrets.CLIENT_REPO_TOKEN }}
-          ORIGINAL_REPO_NAME: ${{ secrets.REPO_NAME }} 
-          ORG_NAME:  ${{ secrets.MY_ORG_NAME }}
-          TARGET_ORG: ${{ secrets.CLIENT_ORG_NAME }}           
+          ORIGINAL_REPO_NAME: ${{ secrets.REPO_NAME }}
+          ORG_NAME: ${{ secrets.MY_ORG_NAME }}
+          TARGET_ORG: ${{ secrets.CLIENT_ORG_NAME }}
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Remover espaços acidentais
           TARGET_ORG=$(echo "${TARGET_ORG}" | xargs)
           ORIGINAL_REPO_NAME=$(echo "${ORIGINAL_REPO_NAME}" | xargs)
           ORG_NAME=$(echo "${ORG_NAME}" | xargs)
@@ -62,21 +60,19 @@ jobs:
           git clone "$GIT_URL" "$REPO_FOLDER"
           cd "$REPO_FOLDER"
 
-          # Remover apenas a pasta .github/workflows do cliente
+          # Adicionar remote do repositório de origem
+          git remote add origin_repo "https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git"
+          git fetch origin_repo main
+
+          # Merge automático
+          git merge origin_repo/main --allow-unrelated-histories -m "Merge automático" || true
+
+          # Remover .github/workflows do cliente após o merge
           if [ -d ".github/workflows" ]; then
             echo "Removendo .github/workflows do cliente..."
             git rm -r .github/workflows
             git commit -m "Removendo workflows do cliente" || true
-          else
-            echo "Pasta .github/workflows não existe no cliente, nada a remover."
           fi
 
-          # Adicionar remote do repositório original
-          git remote add origin_repo "https://x-access-token:$CLIENT_REPO_TOKEN@github.com/${ORG_NAME}/${ORIGINAL_REPO_NAME}.git"
-          git fetch origin_repo main
-
-          # Mesclar arquivos do repositório original
-          git merge origin_repo/main --allow-unrelated-histories -m "Merge automático"
-
-          # Enviar para o cliente
+          # Push final para o cliente
           git push origin main --force
